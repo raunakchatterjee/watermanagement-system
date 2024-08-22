@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Control System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        .water-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .water {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 0;
+            background: #3498db;
+            transition: height 0.5s ease;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            color: #fff;
+            background-color: #3498db;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #2980b9;
+        }
+    </style>
+    <script>
+        function showAlert(action) {
+            alert("Pump will be turned " + action);
+        }
+
+        function updateWaterLevel() {
+            const percentage = {{ water_percentage }};
+            const waterElement = document.querySelector('.water');
+            waterElement.style.height = percentage + '%';
+        }
+
+        window.onload = updateWaterLevel;
+    </script>
+</head>
+<body>
+    <h1>Water Control System</h1>
+    <div class="water-container">
+        <div class="water"></div>
+    </div>
+    <p>Current Water Percentage: {{ water_percentage }}%</p>
+    <p>Current Pump Status: {{ pump_status }}</p>
+
+    <form method="post" action="{% url 'control_pump' %}">
+        {% csrf_token %}
+        <div class="buttons">
+            <button type="submit" name="action" value="on" {% if pump_status == 'on' %}disabled{% endif %} onclick="showAlert('on')">Turn On</button>
+            <button type="submit" name="action" value="off" {% if pump_status == 'off' %}disabled{% endif %} onclick="showAlert('off')">Turn Off</button>
+        </div>
+    </form>
+</body>
+</html>

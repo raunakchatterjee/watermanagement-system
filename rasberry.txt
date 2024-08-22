@@ -1,0 +1,129 @@
+import network
+import urequests as rq
+import time
+from machine import Pin
+
+# Wi-Fi credentials
+SSID = 'Rajat'
+PASSWORD = 'thisisrk'
+
+# Firebase configuration
+FIREBASE_URL = 'https://watermg-e82dd-default-rtdb.firebaseio.com/water.json'  # Replace with your Firebase URL
+
+# Define pins for HC-SR04
+TRIG_PIN = Pin(15, Pin.OUT)
+ECHO_PIN = Pin(14, Pin.IN)
+
+# Define pins for relay and LED
+RELAY_PIN = Pin(13, Pin.OUT)
+LED_PIN = Pin(12, Pin.OUT)
+
+# Constants
+MAX_WATER_LEVEL = 100  # Maximum water level in cm (full tank)
+MIN_WATER_LEVEL = 0    # Minimum water level in cm (empty tank)
+PUMP_ON_PERCENT = 25
+PUMP_OFF_PERCENT = 85
+
+# Track pump state
+pump_on = False
+
+def connect_wifi():
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    wlan.connect(SSID, PASSWORD)
+    
+    while not wlan.isconnected():
+        print("Connecting to Wi-Fi...")
+        time.sleep(1)
+    
+    print("Connected to Wi-Fi:", wlan.ifconfig())
+
+def measure_distance():
+    """ Measure distance using the HC-SR04 sensor. """
+    TRIG_PIN.high()
+    time.sleep_us(10)
+    TRIG_PIN.low()
+    
+    while ECHO_PIN.value() == 0:
+        pulse_start = time.ticks_us()
+    while ECHO_PIN.value() == 1:
+        pulse_end = time.ticks_us()
+    
+    pulse_duration = time.ticks_diff(pulse_end, pulse_start)
+    distance = pulse_duration * 0.034 / 2  # Distance in cm
+    return distance
+
+def calculate_percentage(distance):
+    """ Calculate the percentage of water level based on distance. """
+    distance = max(MIN_WATER_LEVEL, min(distance, MAX_WATER_LEVEL))
+    percentage = (1 - (distance - MIN_WATER_LEVEL) / (MAX_WATER_LEVEL - MIN_WATER_LEVEL)) * 100
+    return percentage
+
+def fetch_pump_status():
+    """ Fetch the motor status from Firebase. """
+    try:
+        response = rq.get(FIREBASE_URL)
+        data = response.json()
+        response.close()
+        return data.get("pump_status", "off")
+    except Exception as e:
+        print("Failed to fetch pump status:", e)
+        return "off"
+
+def send_to_firebase(distance, percentage, pump_status):
+    """ Send distance, percentage, and pump status to Firebase. """
+    data = {
+        "distance": distance,
+        "water_percentage": percentage,
+        "pump_status": pump_status
+    }
+    try:
+        response = rq.patch(FIREBASE_URL, json=data)  # PATCH to update existing data
+        print("Data sent to Firebase:", response.text)
+        response.close()
+    except Exception as e:
+        print("Failed to send data:", e)
+
+def manage_water_level():
+    global pump_on
+    
+    distance = measure_distance()
+    percentage = calculate_percentage(distance)
+    
+    # Fetch the latest pump status from Firebase
+    firebase_pump_status = fetch_pump_status()
+    
+    if firebase_pump_status == "on":
+        pump_on = True
+    elif firebase_pump_status == "off":
+        pump_on = False
+    
+    # Control the pump based on water percentage and manual control
+    if percentage <= PUMP_ON_PERCENT and not pump_on:
+        pump_on = True
+    elif percentage >= PUMP_OFF_PERCENT and pump_on:
+        pump_on = False
+
+    if pump_on:
+        RELAY_PIN.high()
+        LED_PIN.high()
+    else:
+        RELAY_PIN.low()
+        LED_PIN.low()
+    
+    print(f"Measured Distance: {distance} cm")
+    print(f"Water Percentage: {percentage}%")
+    print(f"Pump Status: {'on' if pump_on else 'off'}")
+    
+    # Send updated data to Firebase
+    send_to_firebase(distance, percentage, 'on' if pump_on else 'off')
+
+
+# Connect to Wi-Fi
+connect_wifi()
+
+# Main loop
+while True:
+    time.sleep(10)
+    manage_water_level()
+    time.sleep(10)  # Check every 20 seconds
