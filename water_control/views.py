@@ -1,9 +1,10 @@
 import requests
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
+import .gitignore
 
 # Firebase configuration
-FIREBASE_URL = 'https://watermg-e82dd-default-rtdb.firebaseio.com/water.json'
+
 
 def index(request):
     # Fetch the current water percentage and pump status from Firebase
