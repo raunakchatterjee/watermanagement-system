@@ -8,7 +8,7 @@ SSID = 'Rajat'
 PASSWORD = 'thisisrk'
 
 # Firebase configuration
-FIREBASE_URL = 'https://watermg-e82dd-default-rtdb.firebaseio.com/water.json'  # Replace with your Firebase URL
+FIREBASE_URL = # Replace with your Firebase URL
 
 # Define pins for HC-SR04
 TRIG_PIN = Pin(15, Pin.OUT)
