@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 # Firebase configuration
 
 
-FIREBASE_URL: ${{ secrets.Firebase_Url }}
+FIREBASE_URL: ${{ secrets.FIREBASE_URL }}
 
 def index(request):
     # Fetch the current water percentage and pump status from Firebase
