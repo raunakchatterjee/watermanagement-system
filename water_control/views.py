@@ -4,8 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 # Firebase configuration
 
-
-FIREBASE_URL= 'https://watermg-e82dd-default-rtdb.firebaseio.com/water.json' 
+FIREBASE_URL: ${{ secrets.FIREBASE_URL }}
 #${{ secrets.Firebase_Url }}    
 
 def index(request):
